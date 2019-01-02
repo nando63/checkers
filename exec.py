@@ -23,14 +23,6 @@ def create_model():
 		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 	return model
 
-def showBoard(board,clear=True):
-	if clear:
-		print ("\x1b[1;1H")
-	for riga in board.board:
-		for cell in riga:
-			print (cell,end="")
-		print ("")
-
 def changeBoard(board):
 	conv = {"w":0.25, "b":-0.25, "W":0.5, "B":-0.5, "_":0}
 	b = []
@@ -46,17 +38,15 @@ os.system("cls")
 limit = 10000
 for t in range(limit):
 	board = chessboard()
-	boards = []
 	nmoves = 0
 	while True:
-		moves = nextMoves(board)
+		moves = board.nextMoves()
 		if len(moves) == 0:
 			time.sleep(1)
 			break
 		nmoves += 1
-		move = bestMove(moves,board)
-		doMove(move,board)
-		boards.append((move,deepcopy(board)))
-		showBoard(board)
-		time.sleep(0.1)
+		move = board.bestMove()
+		board.doMove(move)
+		board.show()
+		time.sleep(0.01)
 		print ("Numero mosse = %d " % nmoves)
