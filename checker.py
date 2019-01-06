@@ -39,6 +39,12 @@ class chessboard:
 				['_', '_', '_', '_', '_', '_', '_', '_'],
 				['_', '_', '_', '_', '_', '_', '_', '_'],
 			]
+		self.pawn = {'w':0,'W':0,'b':0,'B':0}
+		for r in range(self.size_board):
+			for c in range(1-r%2, self.size_board,2):
+				pawn = self.get(r,c)
+				if pawn != '_':
+					self.pawn[self.get(r,c)] += 1
 	
 	def getAllMoves(self):
 		pawns = [self.player,self.player.upper()]
@@ -119,61 +125,19 @@ class chessboard:
 					return bestMove
 		return bestMove
 
+	OPENING = 19
+	MIDDLE_GAME = 9
+	MAN_VALUE = [ 100, 100, 100 ];
+	KING_VALUE = [ 250, 250, 300 ];
 	def getValue(self):
-		if False:
-			n = self.contaPedine()
-			if n > 18:
-				valori = [
-					{'w':110, 'W':250, 'b':-102, 'B':-250},
-					{'w':102, 'W':250, 'b':-100, 'B':-250},
-					{'w':102, 'W':250, 'b':-100, 'B':-250},
-					{'w':102, 'W':250, 'b':-100, 'B':-250},
-					{'w':100, 'W':250, 'b':-102, 'B':-250},
-					{'w':100, 'W':250, 'b':-102, 'B':-250},
-					{'w':100, 'W':250, 'b':-102, 'B':-250},
-					{'w':102, 'W':250, 'b':-110, 'B':-250}
-				]
-			elif n > 8:
-				valori = [
-					{'w':110, 'W':250, 'b':-102, 'B':-250},
-					{'w':102, 'W':250, 'b':-100, 'B':-250},
-					{'w':102, 'W':250, 'b':-100, 'B':-250},
-					{'w':102, 'W':255, 'b':-100, 'B':-255},
-					{'w':100, 'W':255, 'b':-102, 'B':-255},
-					{'w':100, 'W':250, 'b':-102, 'B':-250},
-					{'w':100, 'W':250, 'b':-102, 'B':-250},
-					{'w':102, 'W':250, 'b':-110, 'B':-250}
-				]
-			else:
-				valori = [
-					{'w':110, 'W':300, 'b':-102, 'B':-300},
-					{'w':102, 'W':300, 'b':-100, 'B':-300},
-					{'w':102, 'W':300, 'b':-100, 'B':-300},
-					{'w':102, 'W':305, 'b':-100, 'B':-305},
-					{'w':100, 'W':305, 'b':-102, 'B':-305},
-					{'w':100, 'W':300, 'b':-102, 'B':-300},
-					{'w':100, 'W':300, 'b':-102, 'B':-300},
-					{'w':102, 'W':300, 'b':-110, 'B':-300}
-				]
-		valori = [
-			{'w':110, 'W':250, 'b':-102, 'B':-250},
-			{'w':102, 'W':250, 'b':-100, 'B':-250},
-			{'w':102, 'W':250, 'b':-100, 'B':-250},
-			{'w':102, 'W':250, 'b':-100, 'B':-250},
-			{'w':100, 'W':250, 'b':-102, 'B':-250},
-			{'w':100, 'W':250, 'b':-102, 'B':-250},
-			{'w':100, 'W':250, 'b':-102, 'B':-250},
-			{'w':102, 'W':250, 'b':-110, 'B':-250}
-		]
-		value = 0
-		for r in range(self.size_board):
-			for c in range(1-r%2,self.size_board,2):
-				pawn = self.get(r,c)
-				value += valori[r].get(pawn,0)
-				if pawn == 'w' and (c == 0 or c == 7):
-					value +=2
-				elif pawn == 'b' and (c == 0 or c == 7):
-					value -=2
+		n = self.contaPedine()
+		if n >= self.OPENING:
+			game_phase = 0
+		elif n >= self.MIDDLE_GAME:
+			game_phase = 1
+		else:
+			game_phase = 2
+		value = (self.pawn['w'] - self.pawn['b']) * self.MAN_VALUE[game_phase] + (self.pawn['W'] - self.pawn['B']) * self.KING_VALUE[game_phase]
 		return value
 
 	def printMove(self,move):
@@ -186,12 +150,17 @@ class chessboard:
 			self.set(move[i],move[i+1],"_")
 			if pawn == 'w' and move[i+2] == 0:
 				pawn = "W"
+				self.pawn['w'] -= 1
+				self.pawn['W'] += 1
 			elif pawn == 'b' and move[i+2] == self.size_board-1:
 				pawn = "B"
+				self.pawn['b'] -= 1
+				self.pawn['B'] += 1
 			self.set(move[i+2],move[i+3],pawn)
 			if abs(move[i] - move[i+2]) > 1:
 				r = (move[i] + move[i+2]) // 2
 				c = (move[i+1] + move[i+3]) // 2
+				self.pawn[self.get(r,c)] -= 1
 				self.set(r,c,"_")
 		self.player = "b" if self.player == "w" else "w"
 	
@@ -262,11 +231,7 @@ class chessboard:
 		return moves
 
 	def contaPedine(self):
-		n = 0
-		for r in range(self.size_board):
-			for c in range(1-r%2,self.size_board,2):
-				if self.get(r,c) != '_':
-					n += 1
+		n = self.pawn['w'] + self.pawn['W'] + self.pawn['b'] + self.pawn['B']
 		return n
 	
 	def show(self,clear=True):
@@ -279,7 +244,7 @@ class chessboard:
 			for c in range(len(riga)):
 				print (riga[c],end="")
 			print ("")
-		print ("")
+		print (self.pawn)
 
 	
 if __name__ == "__main__":
