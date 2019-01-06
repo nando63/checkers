@@ -1,7 +1,7 @@
 # Enter your code here. Read input from STDIN. Print output to STDOUT
 from random import choice
 from copy import deepcopy
-import sys
+import sys, os
 
 try:
 	raw_input
@@ -15,8 +15,8 @@ def getOpposite(pawn):
 
 class chessboard:
 	def __init__(self):
-		self.player = 'w'
 		self.size_board = 8
+		self.player = 'w'
 		self.board = [
 			['_', 'b', '_', 'b', '_', 'b', '_', 'b'],
 			['b', '_', 'b', '_', 'b', '_', 'b', '_'],
@@ -27,8 +27,20 @@ class chessboard:
 			['_', 'w', '_', 'w', '_', 'w', '_', 'w'],
 			['w', '_', 'w', '_', 'w', '_', 'w', '_']
 		]
+		if False:
+			self.player = 'b'
+			self.board = [
+				['_', '_', '_', '_', '_', '_', '_', '_'],
+				['_', '_', '_', '_', '_', '_', 'W', '_'],
+				['_', '_', '_', '_', '_', '_', '_', '_'],
+				['_', '_', '_', '_', 'B', '_', '_', '_'],
+				['_', '_', '_', '_', '_', '_', '_', '_'],
+				['_', '_', '_', '_', '_', '_', '_', '_'],
+				['_', '_', '_', '_', '_', '_', '_', '_'],
+				['_', '_', '_', '_', '_', '_', '_', '_'],
+			]
 	
-	def nextMoves(self):
+	def getAllMoves(self):
 		pawns = [self.player,self.player.upper()]
 		
 		moves = []
@@ -47,47 +59,126 @@ class chessboard:
 							moves += m
 		return moves
 	
-	def minimax(self, depth, isMaximising):
-		if depth == 0:
-			return -self.getValue()
-		moves = self.nextMoves()
-		if isMaximising:
-			bestValue = -9999
-			for i in range(len(moves)):
-				move = moves[i]
-				b = deepcopy(self)
-				b.doMove(move)
-				newValue = b.minimax(depth - 1,  not isMaximising)
-				if newValue > bestValue:
-					bestValue = newValue
-			return bestValue
-		else:
-			bestValue = 9999
-			for i in range(len(moves)):
-				move = moves[i]
-				b = deepcopy(self)
-				b.doMove(move)
-				newValue = b.minimax(depth - 1,  not isMaximising)
-				if newValue < bestValue:
-					bestValue = newValue
-			return bestValue
-	
+	debug = False
 	def bestMove(self):
-		moves = self.nextMoves()
+		moves = self.getAllMoves()
 		bestValue = -9999
 		bestMoves = []
-		for move in moves:
-			b = deepcopy(self)
-			newValue = self.minimax(3,True)
-			if self.player == 'w':
-				newValue = -newValue
-			if newValue > bestValue:
-				bestValue = newValue
-				bestMoves = [move]
-			elif newValue == bestValue:
-				bestMoves.append(move)
-			self = b
+		
+		if len(moves) > 1:
+			for move in moves:
+				b = deepcopy(self)
+				b.doMove(move)
+				newValue = b.minimax(4,-10000,10000,True)
+				if self.player == 'b':
+					newValue = -newValue
+				if self.debug:
+					b.printMove(move)
+					print(newValue, end=" \n")
+				if newValue > bestValue:
+					bestValue = newValue
+					bestMoves = [move]
+				elif newValue == bestValue:
+					bestMoves.append(move)
+			if self.debug:
+				print("premi invio")
+				input()
+		else:
+			bestMoves = moves
 		return choice(bestMoves)
+	
+	def minimax(self, depth, alpha, beta, isMaximising):
+		moves = self.getAllMoves()
+		if depth == 0 or len(moves) == 0:
+			return self.getValue()
+		if isMaximising:
+			bestMove = -9999
+			for move in moves:
+				b = deepcopy(self)
+				b.doMove(move)
+				#self.show()
+				#b.show(False)
+				bestMove = max(bestMove,b.minimax(depth - 1,  alpha, beta, not isMaximising))
+				#print (isMaximising,bestMove)
+				#input()
+				alpha = max(alpha, bestMove);
+				if (beta <= alpha):
+					return bestMove
+		else:
+			bestMove = 9999
+			for move in moves:
+				b = deepcopy(self)
+				b.doMove(move)
+				#self.show()
+				#b.show(False)
+				bestMove = min(bestMove,b.minimax(depth - 1,  alpha, beta, not isMaximising))
+				#print (isMaximising,bestMove)
+				#input()
+				beta = min(beta, bestMove);
+				if (beta <= alpha):
+					return bestMove
+		return bestMove
+
+	def getValue(self):
+		if False:
+			n = self.contaPedine()
+			if n > 18:
+				valori = [
+					{'w':110, 'W':250, 'b':-102, 'B':-250},
+					{'w':102, 'W':250, 'b':-100, 'B':-250},
+					{'w':102, 'W':250, 'b':-100, 'B':-250},
+					{'w':102, 'W':250, 'b':-100, 'B':-250},
+					{'w':100, 'W':250, 'b':-102, 'B':-250},
+					{'w':100, 'W':250, 'b':-102, 'B':-250},
+					{'w':100, 'W':250, 'b':-102, 'B':-250},
+					{'w':102, 'W':250, 'b':-110, 'B':-250}
+				]
+			elif n > 8:
+				valori = [
+					{'w':110, 'W':250, 'b':-102, 'B':-250},
+					{'w':102, 'W':250, 'b':-100, 'B':-250},
+					{'w':102, 'W':250, 'b':-100, 'B':-250},
+					{'w':102, 'W':255, 'b':-100, 'B':-255},
+					{'w':100, 'W':255, 'b':-102, 'B':-255},
+					{'w':100, 'W':250, 'b':-102, 'B':-250},
+					{'w':100, 'W':250, 'b':-102, 'B':-250},
+					{'w':102, 'W':250, 'b':-110, 'B':-250}
+				]
+			else:
+				valori = [
+					{'w':110, 'W':300, 'b':-102, 'B':-300},
+					{'w':102, 'W':300, 'b':-100, 'B':-300},
+					{'w':102, 'W':300, 'b':-100, 'B':-300},
+					{'w':102, 'W':305, 'b':-100, 'B':-305},
+					{'w':100, 'W':305, 'b':-102, 'B':-305},
+					{'w':100, 'W':300, 'b':-102, 'B':-300},
+					{'w':100, 'W':300, 'b':-102, 'B':-300},
+					{'w':102, 'W':300, 'b':-110, 'B':-300}
+				]
+		valori = [
+			{'w':110, 'W':250, 'b':-102, 'B':-250},
+			{'w':102, 'W':250, 'b':-100, 'B':-250},
+			{'w':102, 'W':250, 'b':-100, 'B':-250},
+			{'w':102, 'W':250, 'b':-100, 'B':-250},
+			{'w':100, 'W':250, 'b':-102, 'B':-250},
+			{'w':100, 'W':250, 'b':-102, 'B':-250},
+			{'w':100, 'W':250, 'b':-102, 'B':-250},
+			{'w':102, 'W':250, 'b':-110, 'B':-250}
+		]
+		value = 0
+		for r in range(self.size_board):
+			for c in range(1-r%2,self.size_board,2):
+				pawn = self.get(r,c)
+				value += valori[r].get(pawn,0)
+				if pawn == 'w' and (c == 0 or c == 7):
+					value +=2
+				elif pawn == 'b' and (c == 0 or c == 7):
+					value -=2
+		return value
+
+	def printMove(self,move):
+		for i in range(0,len(move),2):
+			print ("%d %d, " % (move[i],move[i+1]),end="")
 	
 	def doMove(self,move):
 		for i in range(0,len(move)-2,2):
@@ -170,21 +261,25 @@ class chessboard:
 						moves.append((r,c,newr,newc))
 		return moves
 
-	def getValue(self):
-		value = 0
-		valori = {'_':0, 'w':10, 'W':50, 'b':-10, 'B':-50}
+	def contaPedine(self):
+		n = 0
 		for r in range(self.size_board):
 			for c in range(1-r%2,self.size_board,2):
-				value += valori.get(self.get(r,c),0)
-		return value
-
+				if self.get(r,c) != '_':
+					n += 1
+		return n
+	
 	def show(self,clear=True):
 		if clear:
 			print ("\x1b[1;1H")
-		for riga in self.board:
-			for cell in riga:
-				print (cell,end="")
+			os.system("cls")
+		for r in range(len(self.board)):
+			riga = self.board[r]
+			print (r,end=" ")
+			for c in range(len(riga)):
+				print (riga[c],end="")
 			print ("")
+		print ("")
 
 	
 if __name__ == "__main__":
@@ -194,7 +289,7 @@ if __name__ == "__main__":
 	board.board = []
 	for _ in range(board.size_board):
 		board.board.append(list(raw_input().strip()))
-	moves = board.nextMoves()
+	moves = board.getAllMoves()
 	if len(moves) > 0:
 		move = board.bestMove()
 		print ((len(move) // 2) - 1)

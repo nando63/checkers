@@ -40,13 +40,13 @@ for t in range(limit):
 	board = chessboard()
 	nmoves = 0
 	while True:
-		moves = board.nextMoves()
+		board.show()
+		moves = board.getAllMoves()
 		if len(moves) == 0:
 			time.sleep(1)
 			break
 		nmoves += 1
+		print ("Numero mosse = %d " % nmoves)
 		move = board.bestMove()
 		board.doMove(move)
-		board.show()
 		time.sleep(0.01)
-		print ("Numero mosse = %d " % nmoves)
