@@ -4,10 +4,10 @@ from checker import *
 import time
 from copy import deepcopy
 from random import choice,random
-#from keras.models import Sequential
-#from keras.layers import Dense
-#import numpy
-#from keras.models import load_model
+import numpy
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.models import load_model
 
 def create_model():
 	if os.path.isfile('my_model.h5'):
@@ -23,30 +23,71 @@ def create_model():
 		model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 	return model
 
-def changeBoard(board):
-	conv = {"w":0.25, "b":-0.25, "W":0.5, "B":-0.5, "_":0}
-	b = []
-	for r in range(8):
-		for c in range(1-r%2,8,2):
-			b.append(conv[board[r][c]])
-	return numpy.array([b])
+model = create_model()
 
-	
-#model = create_model()
+if not os.path.isfile('my_model.h5'):
+    print("No model found. Generating data and training a new model...")
+    X_train = []
+    y_train = []
 
-os.system("cls")
-limit = 10000
-for t in range(limit):
-	board = chessboard()
-	nmoves = 0
-	while True:
-		board.show()
-		moves = board.getAllMoves()
-		if len(moves) == 0:
-			time.sleep(1)
-			break
-		nmoves += 1
-		print ("Numero mosse = %d " % nmoves)
-		move = board.bestMove()
-		board.doMove(move)
-		time.sleep(0.01)
+    GAMES_TO_PLAY = 500
+    print(f"Playing {GAMES_TO_PLAY} games to generate data...")
+
+    for i in range(GAMES_TO_PLAY):
+        board = chessboard(model)
+        history = []
+
+        while True:
+            moves = board.getAllMoves()
+            if len(moves) == 0:
+                winner = 'b' if board.player == 'w' else 'w'
+                for h_board, h_player in history:
+                    if winner == h_player:
+                        y_train.append(1) # Win
+                    else:
+                        y_train.append(0) # Loss
+                    X_train.append(changeBoard(h_board))
+                break
+
+            move = board.bestMove()
+            history.append((deepcopy(board.board), board.player))
+            board.doMove(move)
+
+        print("Game %d/%d complete" % (i+1, GAMES_TO_PLAY))
+
+    print("Data generation complete.")
+    print("Generated %d training samples." % len(X_train))
+
+    X_train = numpy.array(X_train)
+    y_train = numpy.array(y_train)
+
+    X_train = X_train.squeeze()
+
+    model.fit(X_train, y_train, epochs=100, batch_size=128)
+
+    model.save('my_model.h5')
+    print("Model trained and saved as my_model.h5")
+
+
+# Test the AI
+print("\n\n--- Starting test match: Keras AI (w) vs Minimax AI (b) ---")
+board = chessboard(model)
+board.show()
+
+while True:
+    moves = board.getAllMoves()
+    if len(moves) == 0:
+        winner = 'b' if board.player == 'w' else 'w'
+        print("Game over! Winner is: " + winner)
+        break
+
+    if board.player == 'w':
+        print("Keras AI's turn (w)")
+        move = board.bestMoveKeras()
+    else:
+        print("Minimax AI's turn (b)")
+        move = board.bestMove()
+
+    board.doMove(move)
+    board.show()
+    time.sleep(1)

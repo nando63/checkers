@@ -1,4 +1,5 @@
 # Enter your code here. Read input from STDIN. Print output to STDOUT
+import numpy
 from random import choice
 from copy import deepcopy
 import sys, os
@@ -13,8 +14,17 @@ def getOpposite(pawn):
 		return ['b','B']
 	return ['w','W']
 
+def changeBoard(board):
+	conv = {"w":0.25, "b":-0.25, "W":0.5, "B":-0.5, "_":0}
+	b = []
+	for r in range(8):
+		for c in range(1-r%2,8,2):
+			b.append(conv[board[r][c]])
+	return numpy.array([b])
+
 class chessboard:
-	def __init__(self):
+	def __init__(self, model=None):
+		self.model = model
 		self.size_board = 8
 		self.player = 'w'
 		self.board = [
@@ -92,6 +102,30 @@ class chessboard:
 		else:
 			bestMoves = moves
 		return choice(bestMoves)
+
+	def bestMoveKeras(self):
+		moves = self.getAllMoves()
+		if not moves:
+			return None
+
+		if len(moves) == 1:
+			return moves[0]
+
+		next_states = []
+		for move in moves:
+			b = deepcopy(self)
+			b.doMove(move)
+			next_states.append(changeBoard(b.board))
+
+		next_states = numpy.array(next_states).squeeze()
+		predictions = self.model.predict(next_states)
+
+		if self.player == 'w':
+			best_move_index = numpy.argmax(predictions)
+		else: # for player 'b', we want the lowest score from the model's perspective (which is trained on 'w' winning)
+			best_move_index = numpy.argmin(predictions)
+
+		return moves[best_move_index]
 	
 	def minimax(self, depth, alpha, beta, isMaximising):
 		moves = self.getAllMoves()
